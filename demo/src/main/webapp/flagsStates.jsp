@@ -1,4 +1,4 @@
-<%@page import="org.featureflags.Flags"%>
+<%@page import="org.featureflags.demo.Flags"%>
 
 <h2>Flag state</h2>
 <a href="javascript:parent.frames['state'].window.location.reload()">RELOAD</a>

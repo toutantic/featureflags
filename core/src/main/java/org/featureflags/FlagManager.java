@@ -1,5 +1,8 @@
 package org.featureflags;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,21 +12,45 @@ public class FlagManager {
     private Logger log = LoggerFactory.getLogger(this.getClass());
     private FeatureFlags[] flags;
     private Class<?> featureFlagsClass;
+    private String featureFlagClassName;
+    private Map<FeatureFlags, FlagState> flagsStates;
 
-    public FlagManager(String className) {
-	initFlags(className);
-
+    public enum Result {
+	FLIP_UP, FLIP_DOWN, NOT_FOUND, OK
     }
 
-    private void initFlags(String className) {
-	loadFeatureFlagsClass(className);
-	flags = (FeatureFlags[]) invokeStaticMethod("values", null);
+    public enum FlagState {
+	UP, DOWN
+    }
 
-	for (FeatureFlags flag : flags) {
-	    FlagState flagState = flag.isUp() ? FlagState.DOWN : FlagState.UP;
-	    log.info("{}({}) is " + flagState, flag, flag.getDescription());
+    private FlagManager(String className) {
+	this.featureFlagClassName = className;
+	flagsStates = new HashMap<FeatureFlags, FlagState>();
+    }
+
+    
+    public static FlagManager get(FeatureFlags flag, FlagState flagState) {
+	if (instance == null) {
+	    instance = new FlagManager(flag.getClass().getCanonicalName());
 	}
+	instance.setFlagStateTo(flag, flagState);
+	return instance;
+    }
+    
+    public static FlagManager get(String className) {
+	if (instance == null) {
+	    instance = new FlagManager(className);
+	}
+	return instance;
+    }
 
+    public static FlagManager get() {
+	return instance;
+    }
+
+    public void initFlags() {
+	loadFeatureFlagsClass(featureFlagClassName);
+	flags = (FeatureFlags[]) invokeStaticMethod("values", null);
     }
 
     public FeatureFlags[] getFlags() {
@@ -36,12 +63,12 @@ public class FlagManager {
      */
     public Result flipFlag(String flagName) {
 	FeatureFlags flag = getFlag(flagName);
-	if(flag == null) { 
+	if (flag == null) {
 	    return Result.NOT_FOUND;
 	}
 	return flipFlag(flag);
     }
-    
+
     public Result flipFlag(FeatureFlags flag) {
 	FlagState newFlagState = flag.isUp() ? FlagState.DOWN : FlagState.UP;
 	return setFlagStateTo(flag, newFlagState);
@@ -51,56 +78,39 @@ public class FlagManager {
 	FeatureFlags flag = getFlag(flagName);
 	return setFlagStateTo(flag, newFlagState);
     }
-    
+
     public Result setFlagStateTo(FeatureFlags flag, FlagState newFlagState) {
-	if(flag == null) { 
+	if (flag == null) {
 	    return Result.NOT_FOUND;
 	}
-	switch (newFlagState) {
-	case UP:
-	    flag.up();
-	    log.info("Flag {} UP", flag);
-	    return Result.FLIP_UP;
-	case DOWN:
-	    flag.down();
-	    log.info("Flag {} UP", flag);
-	    return Result.FLIP_DOWN;
-	}
+	flagsStates.put(flag, newFlagState);
+	log.info("Flag {} {}", flag,newFlagState);
 	
-	// can't happend
-	return Result.UNEXPECTED;
+	return newFlagState == FlagState.UP ? Result.FLIP_UP : Result.FLIP_DOWN;
+	
     }
     
+    public boolean isUp(FeatureFlags flag) {
+	FlagState currentFlagState = flagsStates.get(flag);
+	return currentFlagState == FlagState.UP ? true : false;
+    }
+
     public FeatureFlags getFlag(String flagName) {
-	return (FeatureFlags) Utils.invokeStaticClass(featureFlagsClass, "valueOf" , new Object[]{flagName},  String.class);
+	return (FeatureFlags) Utils.invokeStaticClass(featureFlagsClass, "valueOf", new Object[] { flagName }, String.class);
     }
-    
+
     private void loadFeatureFlagsClass(String className) {
 	log.info("Loading feature flags: " + className);
 	try {
 	    featureFlagsClass = Class.forName(className);
 	} catch (ClassNotFoundException e) {
-	    throw new RuntimeException("Can't find Feature Flags ",e);
+	    throw new RuntimeException("Can't find Feature Flags ", e);
 	}
     }
 
     private Object invokeStaticMethod(String methodName, Object[] args, Class<?>... parameterTypes) {
 	return Utils.invokeStaticClass(featureFlagsClass, methodName, args, parameterTypes);
     }
-    
-    public enum Result {
-	FLIP_UP,
-	FLIP_DOWN,
-	NOT_FOUND,
-	OK,
-	UNEXPECTED
-    }
-
-    public enum FlagState {
-	UP,
-	DOWN
-    }
 
 
-    
 }

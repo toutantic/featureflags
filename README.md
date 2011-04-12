@@ -1,74 +1,84 @@
 Feature flags
 =======
 
-* Turn feature up or down live by using feature flag *
-Inspired by [Flickr](http://code.flickr.com/blog/2009/12/02/flipping-out/) and [Launchpad](https://dev.launchpad.net/LEP/FeatureFlags).
-The main goal is to decouple code delivery in production from feature activation.
+*Turn feature up or down live by using feature flag*  
+Inspired by [Flickr](http://code.flickr.com/blog/2009/12/02/flipping-out/) and [Launchpad](https://dev.launchpad.net/LEP/FeatureFlags).  
+The main goal is to decouple code delivery in production from feature activation.  
 
 Requirements
-------------
+=======
 
 * Java SE 5 (for enum)
-* slf4j 1.6.1/logback 0.9.27 (for logging)
+* slf4j 1.6.1 (for logging)
 * Servlet API 2.4
 
+Demo
+=======
+
+
+Roadmap
+=======
+- Persist flags state in case of reboot
+- Distribute flags state across servers 
+- Manage different state per server
+- Manage different state per user or user group
+- ...
+
 How To Use
-----------
+=======
 
-** First: dependencies **
+**First: dependencies**  
 Add feature flag jar and dependencies to your classpath
+
 * featureflags-1.0.0.jar
-* logback-core-0.9.27.jar
-* logback-classic-0.9.27.jar
 * slf4-api-1.6.1.jar
+* slf4-simple-1.6.1.jar (or your choice of logging implementation)
 
-Feature flag is build with maven but not yet available in a maven repository. 
-
-** Second: create a FeatureFlags enum **
+**Second: create a FeatureFlags enum**  
 Create an enum like the one below to host all your feature flags.
 
 	package org.featureflags;
 	
 	import org.featureflags.FeatureFlags;
+	import org.featureflags.FlagManager.FlagState;
 	
 	public enum Flags implements FeatureFlags {
 	
+		//Create your own feature flags
 	    ONE("First Feature Flag"),
-	    TWO("Second Feature Flag", true),
+	    TWO("Second Feature Flag", FlagState.UP),
 	    THREE("Third Feature Flag");
 	    
-	    private boolean on = false;
+	    //Don't change anything below
+	    private FlagState flagState = FlagState.DOWN;
 	    private String description;
+	    private FlagManager flagManager;
 	    
 	    private Flags(String description) {
-		this.description = description;
+			initFlag(description, flagState);
 	    }
 	
-	    private Flags(String description, boolean state) {
-		this.description = description;
-		this.on = state;
+	    private Flags(String description, FlagState flagState) {
+			this.flagState = flagState;
+			initFlag(description, flagState);
+	    }
+	
+	    public void initFlag(String description, FlagState flagState) {
+			this.description = description;
+			this.flagManager = FlagManager.get(this, flagState);    
 	    }
 	    
 	    public boolean isUp() {
-		return on;
+		    return flagManager.isUp(this);
 	    }
-	    
-	    public void up() {
-		this.on = true;
-	    }
-	    
-	    public void down() {
-		this.on = false;
-	    }
-	    
+	
 	    public String getDescription() {
 	        return description;
 	    }
 	    
 	}
 
-** Third:Use Feature Flag in your code **
-
+**Third: Use Feature Flags in your code**  
 
 	if(Flags.ONE.isUp()) { 
 		// Do the new stuff
@@ -76,7 +86,7 @@ Create an enum like the one below to host all your feature flags.
 		// Keep doing the old stuff
 	}
 	
-** FOURTH: Configure FeatureFlag servlet**
+**FOURTH: Configure FeatureFlag servlet**  
 
 Add this to your web.xml
 
@@ -94,3 +104,4 @@ Add this to your web.xml
 			<servlet-name>featureFlags</servlet-name>
 			<url-pattern>/flags/*</url-pattern>
 		</servlet-mapping>
+		
