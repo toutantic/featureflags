@@ -42,9 +42,10 @@ public class FlagServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
 	String featureFlagsClassName = getServletConfig().getInitParameter("featureFlagsClassName");
-	flagManager = new FlagManager(featureFlagsClassName);
-	html = Utils.readRessource(this, "index.html");
-	linkTemplate = Utils.readRessource(this, "link.template");
+	flagManager = FlagManager.get(featureFlagsClassName);
+	flagManager.initFlags();
+	html = Utils.readRessource(flagManager, "index.html");
+	linkTemplate = Utils.readRessource(flagManager, "link.template");
 
     }
 

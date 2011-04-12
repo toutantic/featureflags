@@ -11,7 +11,8 @@ public class FlagManagerTest {
 
     @Test
     public void testGetFlag() {
-	FlagManager manager = new FlagManager("org.featureflags.Flags");
+	FlagManager manager = FlagManager.get("org.featureflags.Flags");
+	manager.initFlags();
 	FeatureFlags flag = manager.getFlag("ONE");
 	assertEquals("get flag ONE", Flags.ONE, flag);
 	flag = manager.getFlag("THREE");
@@ -22,16 +23,24 @@ public class FlagManagerTest {
 
     @Test
     public void testFlipFlag() {
-	FlagManager manager = new FlagManager("org.featureflags.Flags");
-	String flagName = "ONE";
+	FlagManager manager = FlagManager.get("org.featureflags.Flags");
+
+	flipFlag(manager, "ONE");
+	flipFlag(manager, "TWO");
+	flipFlag(manager, "THREE");
+    }
+
+    private void flipFlag(FlagManager manager, String flagName) {
 	FeatureFlags flag = manager.getFlag(flagName);
 	boolean status = flag.isUp();
+	Result expectedResult = status ? Result.FLIP_DOWN : Result.FLIP_UP;
 	Result flipResult = manager.flipFlag(flagName);
 	assertEquals("flip flag Result", !status, flag.isUp());
-	assertEquals("flip flag Result", Result.FLIP_UP, flipResult);
+	assertEquals("flip flag Result", expectedResult, flipResult);
 	flipResult = manager.flipFlag(flagName);
+	expectedResult =  status ? Result.FLIP_UP : Result.FLIP_DOWN;
 	assertEquals("flip flag Result", status, flag.isUp());
-	assertEquals("flip flag Result", Result.FLIP_DOWN, flipResult);
+	assertEquals("flip flag Result", expectedResult, flipResult);
     }
 
 }
