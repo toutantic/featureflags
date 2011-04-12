@@ -1,5 +1,13 @@
 Feature Flags changelog
 
 -----------------------
+Change in version 1.0.1 13/04/2011
+* All calls to FeatureFlags.isUp() are now delegate to the FlagManager.
+* Create two maven module
+ * One for core jar
+ * One for demo war
+
+
+-----------------------
 Change in version 1.0.0 12/04/2011
 - Initial release
