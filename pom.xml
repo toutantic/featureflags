@@ -4,7 +4,7 @@
 	<groupId>org.featureflags</groupId>
 	<artifactId>pom</artifactId>
 	<packaging>pom</packaging>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>${featureflags.version}</version>
 	<name>Feature flag</name>
 	<properties>
 		<featureflags.version>1.0.1</featureflags.version>
