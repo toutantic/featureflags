@@ -1,0 +1,24 @@
+# Compiled source
+.class
+
+# Maven target dir
+target/
+
+
+# IntelliJ project files 
+*.iml
+*.iws
+*.ipr
+.idea
+out
+
+# Eclipse conf file
+.settings
+.classpath
+.project
+.settings
+
+# sysdeo tomcat plugin
+.tomcatplugin
+.#webclasspath
+work/
