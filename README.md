@@ -14,7 +14,7 @@ Requirements
 
 Demo
 =======
-
+http://featureflagsdemo.toutantic.cloudbees.net
 
 Roadmap
 =======
@@ -30,14 +30,14 @@ How To Use
 **First: dependencies**  
 Add feature flag jar and dependencies to your classpath
 
-* featureflags-1.0.0.jar
-* slf4-api-1.6.1.jar
-* slf4-simple-1.6.1.jar (or your choice of logging implementation)
+* [featureflags-1.0.1.jar](http://dl.dropbox.com/u/24652695/featureflags-1.0.1.jar)
+* [slf4-api-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar)
+* [slf4-simple-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar)
 
 **Second: create a FeatureFlags enum**  
 Create an enum like the one below to host all your feature flags.
 
-	package org.featureflags;
+	package org.featureflags.demo;
 	
 	import org.featureflags.FeatureFlags;
 	import org.featureflags.FlagManager.FlagState;
@@ -86,7 +86,7 @@ Create an enum like the one below to host all your feature flags.
 		// Keep doing the old stuff
 	}
 	
-**FOURTH: Configure FeatureFlag servlet**  
+**Fourth: Configure FeatureFlag servlet**  
 
 Add this to your web.xml
 
