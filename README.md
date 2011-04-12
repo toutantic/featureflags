@@ -14,7 +14,8 @@ Requirements
 
 Demo
 =======
-(http://featureflagsdemo.toutantic.cloudbees.net)
+[http://featureflagsdemo.toutantic.cloudbees.net](http://featureflagsdemo.toutantic.cloudbees.net)  
+
 Roadmap
 =======
 - Persist flags state in case of reboot
