@@ -1,0 +1,3 @@
+<form method="POST" action="%s" >
+	<div title="%s" onclick="javascript:this.parentNode.submit();" class="%s">%s</div>
+</form>

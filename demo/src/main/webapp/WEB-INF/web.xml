@@ -1,0 +1,24 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+	<display-name>Sample configuration to use feature flag</display-name>
+
+
+	<servlet>
+		<servlet-name>featureFlags</servlet-name>
+		<servlet-class>org.featureflags.FlagServlet</servlet-class>
+		<init-param>
+			<param-name>featureFlagsClassName</param-name>
+			<param-value>org.featureflags.demo.Flags</param-value>
+			<description>Full class name of your Feature flags class. REQUIRED</description>
+		</init-param>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>featureFlags</servlet-name>
+		<url-pattern>/flags/*</url-pattern>
+	</servlet-mapping>
+
+</web-app>
