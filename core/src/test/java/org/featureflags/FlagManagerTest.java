@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.featureflags.FeatureFlags;
 import org.featureflags.FlagManager;
+import org.featureflags.FlagManager.FlagState;
 import org.featureflags.FlagManager.Result;
 import org.junit.Test;
 
@@ -43,4 +44,33 @@ public class FlagManagerTest {
 	assertEquals("flip flag Result", expectedResult, flipResult);
     }
 
+    @Test
+    public void testFlipFlagForUser() {
+	FlagManager manager = FlagManager.get("org.featureflags.Flags");
+	manager.initFlags();
+	
+	String[] testUsers = new String[]{"bob","john","foo","bar","bob2","john2","foo2","bar2"};
+	String[] flagState = new String[]{"UP","UP","DOWN","UP","UP","UP","DOWN","UP"};
+	FlagThread[] flagThreads = new FlagThread[8];
+	for (int i = 0; i < testUsers.length; i++) {
+	    flagThreads[i] = new FlagThread(testUsers[i]);
+	    manager.setFlagStateForUserTo(testUsers[i], Flags.ONE.toString(), FlagState.valueOf(flagState[i]));
+	}
+
+	for (int i = 0; i < testUsers.length; i++) {
+	    flagThreads[i].run();
+	}
+
+	assertEquals(true, flagThreads[0].isUp());
+	assertEquals(true, flagThreads[1].isUp());
+	assertEquals(false, flagThreads[2].isUp());
+	assertEquals(true, flagThreads[3].isUp());
+	assertEquals(true, flagThreads[4].isUp());
+	assertEquals(true, flagThreads[5].isUp());
+	assertEquals(false, flagThreads[6].isUp());
+	assertEquals(true, flagThreads[7].isUp());
+	assertEquals(false, Flags.ONE.isUp());
+	
+    }
+    
 }
