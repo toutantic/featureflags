@@ -58,9 +58,16 @@ public class FlagManagerTest {
 	}
 
 	for (int i = 0; i < testUsers.length; i++) {
-	    flagThreads[i].run();
+	    Thread thread = new Thread(flagThreads[i]);
+	    thread.start();
 	}
 
+	try {
+	    Thread.sleep(100);
+	} catch (InterruptedException e) {
+	    e.printStackTrace();
+	}
+	
 	assertEquals(true, flagThreads[0].isUp());
 	assertEquals(true, flagThreads[1].isUp());
 	assertEquals(false, flagThreads[2].isUp());
@@ -70,6 +77,14 @@ public class FlagManagerTest {
 	assertEquals(false, flagThreads[6].isUp());
 	assertEquals(true, flagThreads[7].isUp());
 	assertEquals(false, Flags.ONE.isUp());
+	
+	assertEquals(true, Flags.TWO.isUp());
+	manager.setFlagStateForUserTo("other", Flags.TWO.toString(), FlagState.DOWN);
+	assertEquals(true, Flags.TWO.isUp());
+	manager.setThreadUserName("other");
+	assertEquals(false, Flags.ONE.isUp());
+	assertEquals(false, Flags.TWO.isUp());
+	
 	
     }
     
