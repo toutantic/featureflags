@@ -54,9 +54,11 @@ public class FlagServlet extends HttpServlet {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
 	AcceptedFormat format = parseFormat(request);
 	Result result = Result.OK;
 	String responseString = "";
+	flagManager.setThreadUserName(userName);
 	if (flagName != null && flagName.length() > 0) {
 	    FeatureFlags flag = flagManager.getFlag(flagName);
 	    if (flag == null) {
@@ -67,51 +69,99 @@ public class FlagServlet extends HttpServlet {
 		    responseString = flag.isUp() ? FlagState.UP.toString() : FlagState.DOWN.toString();
 		    break;
 		default:
-		    responseString += getHtmlForFlag(flag);
+		    responseString += getHtmlForFlag(flag, userName);
 		    break;
 		}
 	    }
 	} else {
 	    responseString += displayAllFlags();
 	}
-	sendResponse(response, flagName, result, responseString);
+	flagManager.resetThreadUserName();
+
+	sendResponse(response, flagName, result, responseString, null);
     }
 
     /**
      * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	String refererPage = request.getHeader("referer");
+	System.out.println(refererPage);
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
+	String userNameInParam = request.getParameter("username");
+	if(userNameInParam != null) {
+	    userName = userNameInParam;
+	}
+	Result result = null;
+	if (userName != null) {
+	    result = flagManager.flipFlagForUser(userName, flagName);
+	} else {
+	    result = flagManager.flipFlag(flagName);
+	}
 
-	Result result = flagManager.flipFlag(flagName);
-
-	sendResponse(response, flagName, result, null);
+	sendResponse(response, flagName, result, null, refererPage);
     }
 
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
+
 	FlagState newFlagState = parseFlagState(request);
 
-	Result result = flagManager.setFlagStateTo(flagName, newFlagState);
+	Result result = null;
+	if (userName != null) {
+	    result = flagManager.setFlagStateForUserTo(userName, flagName, newFlagState);
+	} else {
+	    result = flagManager.setFlagStateTo(flagName, newFlagState);
+	}
 
-	sendResponse(response, flagName, result, null);
+	sendResponse(response, flagName, result, null, null);
     }
 
     private String parseFlagName(HttpServletRequest request) {
-	String flagName = request.getPathInfo();
-	if (flagName != null && flagName.length() > 0) {
-	    flagName = flagName.substring(1);
-	}
+	String flagName = parseUserOrFlagName(request, true);
 
 	// In the servlet API 2.4 we can't get this information in the init method without a Request object
 	servletUri = request.getContextPath() + request.getServletPath();
 	return flagName;
     }
-    
+
+    private String parseUserName(HttpServletRequest request) {
+	String userName = parseUserOrFlagName(request, false);
+
+	return userName;
+    }
+
+    private String parseUserOrFlagName(HttpServletRequest request, boolean parseFlag) {
+	String flagName = request.getPathInfo();
+	if (flagName != null && flagName.length() > 0) {
+	    flagName = flagName.substring(1);
+
+	    int slashIndex = flagName.indexOf("/");
+	    if (slashIndex != -1) {
+		if (parseFlag) {
+		    return flagName.substring(0, slashIndex);
+		} else {
+		    return flagName.substring(slashIndex + 1);
+		}
+	    } else {
+		if (parseFlag) {
+		    return flagName;
+		} else {
+		    return null;
+		}
+	    }
+	}
+
+	return null;
+
+    }
+
     private AcceptedFormat parseFormat(HttpServletRequest request) {
 	String formatString = request.getParameter(AcceptedParameter.format.toString());
-	//HTML is the default format
+	// HTML is the default format
 	if (formatString == null || formatString.length() == 0) {
 	    return AcceptedFormat.html;
 	}
@@ -123,8 +173,8 @@ public class FlagServlet extends HttpServlet {
 	FlagState newFlagState = FlagState.valueOf(flagNewStateString);
 	return newFlagState;
     }
-    
-    private void sendResponse(HttpServletResponse response, String flagName, Result result, String body) throws IOException {
+
+    private void sendResponse(HttpServletResponse response, String flagName, Result result, String body, String refererPage) throws IOException {
 	switch (result) {
 	case NOT_FOUND:
 	    response.sendError(404, "Can't find " + flagName);
@@ -134,7 +184,11 @@ public class FlagServlet extends HttpServlet {
 		String content = String.format(html, body);
 		response.getWriter().print(content);
 	    } else {
-		response.sendRedirect(servletUri);
+		if(refererPage != null) {
+		    response.sendRedirect(refererPage);
+		} else {
+		    response.sendRedirect(servletUri);
+		}
 	    }
 	    break;
 	}
@@ -144,15 +198,54 @@ public class FlagServlet extends HttpServlet {
 	StringBuilder builder = new StringBuilder();
 
 	for (FeatureFlags flag : flagManager.getFlags()) {
-	    builder.append(getHtmlForFlag(flag));
+	    builder.append(getHtmlForFlag(flag, null));
 	}
 	return builder.toString();
     }
-    
-    
-    private String getHtmlForFlag(FeatureFlags flag) {
+
+    private String getHtmlForFlag(FeatureFlags flag, String userName) {
+	String html = "<div class=\"flagDiv\">"; 
+	    html+= getHtmlForFlag(flag, userName, null);
+	String[] userNames = flagManager.getUsersForFlag(flag);
+	if (userNames.length > 0) {
+	    for (String user : userNames) {
+		html += getHtmlForUserFlag(flag, userName, user);
+	    }
+	}
+	html+= "<form class=\"flagForm\" method=\"POST\" action=\"/ff/flags/";
+	html+= flag;
+	html+="\" >";
+	html+= "<input type=\"text\" name=\"username\" title=\"add a user\" value=\"username\" />";
+	//html+= "<div title=\"First Feature Flag\" onclick=\"javascript:this.parentNode.submit();\" class=\"flagUp\">ONE</div>"; 
+	html+= "</form>";
+	return html;
+    }
+
+    private String getHtmlForFlag(FeatureFlags flag, String userName, String threadUserName) {
+	flagManager.setThreadUserName(threadUserName);
 	String divClass = flag.isUp() ? "flagUp" : "flagDown";
-	return String.format(linkTemplate, servletUri + "/" + flag, flag.getDescription(), divClass, flag);
+	String uri = servletUri + "/" + flag;
+	if (userName != null) {
+	    uri += "/" + userName;
+	}
+	flagManager.resetThreadUserName();
+	return String.format(linkTemplate, uri, flag.getDescription(), divClass, flag);
+    }
+    
+    private String getHtmlForUserFlag(FeatureFlags flag, String userName, String threadUserName) {
+	flagManager.setThreadUserName(threadUserName);
+	String divClass = flag.isUp() ? "flagUp" : "flagDown";
+	String uri = servletUri + "/" + flag;
+
+	if (threadUserName != null) {
+	    uri += "/" + threadUserName;
+	} else if (userName != null) {
+	    uri += "/" + userName;
+	}
+	
+	
+	flagManager.resetThreadUserName();
+	return String.format(linkTemplate, uri, flag.getDescription(), divClass, threadUserName);
     }
 
 }

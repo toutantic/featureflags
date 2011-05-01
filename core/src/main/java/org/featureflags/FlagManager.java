@@ -1,11 +1,17 @@
 package org.featureflags;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author apelletier
+ *
+ */
 public class FlagManager {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
@@ -137,9 +143,11 @@ public class FlagManager {
     }
 
     public Result flipFlagForUser(String userName, String flagName) {
+	setThreadUserName(userName);
 	Map<FeatureFlags, FlagState> userFlagsState = getOrCreateUser(userName);
 	FeatureFlags flag = getFlag(flagName);
 	FlagState newFlagState = flag.isUp() ? FlagState.DOWN : FlagState.UP;
+	resetThreadUserName();
 	return setFlagStateTo(userFlagsState, userName, flag, newFlagState);
     }
 
@@ -159,6 +167,24 @@ public class FlagManager {
 
     public String getThreadUserName() {
 	return currentUser.get();
+    }
+    
+    
+    /**
+     * @param flag
+     * @return the list username who have a specific state for this flag.
+     */
+    public String[] getUsersForFlag(FeatureFlags flag) {
+	List<String> userNames = new ArrayList<String>();
+	for (String userName : flagUsers.keySet()) {
+	    Map<FeatureFlags, FlagState> flagsStates = flagUsers.get(userName);
+	    for (FeatureFlags userFlag : flagsStates.keySet()) {
+		if(flag == userFlag) {
+		    userNames.add(userName);
+		}
+	    }
+	}
+	return userNames.toArray(new String[userNames.size()]);
     }
 
 }
