@@ -29,8 +29,6 @@ public class FeatureFlagFilter implements Filter {
     }
 
     public void destroy() {
-	// TODO Auto-generated method stub
-
     }
 
 }

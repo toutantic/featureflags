@@ -16,8 +16,7 @@ import org.featureflags.FlagManager.Result;
 public class FlagServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private FlagManager flagManager;
-    private String html;
-    private String linkTemplate;
+    private StringTemplate stringTemplate;
     private String servletUri;
 
     private enum AcceptedParameter {
@@ -44,9 +43,7 @@ public class FlagServlet extends HttpServlet {
 	String featureFlagsClassName = getServletConfig().getInitParameter("featureFlagsClassName");
 	flagManager = FlagManager.get(featureFlagsClassName);
 	flagManager.initFlags();
-	html = Utils.readRessource(flagManager, "index.html");
-	linkTemplate = Utils.readRessource(flagManager, "link.template");
-
+	stringTemplate = new StringTemplate(flagManager);
     }
 
     /**
@@ -64,21 +61,40 @@ public class FlagServlet extends HttpServlet {
 	    if (flag == null) {
 		result = Result.NOT_FOUND;
 	    } else {
-		switch (format) {
-		case txt:
-		    responseString = flag.isUp() ? FlagState.UP.toString() : FlagState.DOWN.toString();
-		    break;
-		default:
-		    responseString += getHtmlForFlag(flag, userName);
-		    break;
+		if (userDoesNotExist(flag, userName)) {
+		    result = Result.NOT_FOUND;
+		} else {
+		    switch (format) {
+		    case txt:
+			responseString = flag.isUp() ? FlagState.UP.toString() : FlagState.DOWN.toString();
+			break;
+		    default:
+			responseString += stringTemplate.getHtmlForFlag(flag, userName);
+			break;
+		    }
 		}
 	    }
 	} else {
-	    responseString += displayAllFlags();
+	    responseString += stringTemplate.displayAllFlags();
 	}
 	flagManager.resetThreadUserName();
 
 	sendResponse(response, flagName, result, responseString, null);
+    }
+
+    private boolean userDoesNotExist(FeatureFlags flag,String userName) {
+	if(userName == null) {
+	    return false;
+	}
+	String[] userNames = flagManager.getUsersForFlag(flag);
+	if (userNames.length > 0) {
+	    for (String user : userNames) {
+		if (user.equals(userName)) {
+		    return false;
+		}
+	    }
+	}
+	return true;
     }
 
     /**
@@ -90,7 +106,7 @@ public class FlagServlet extends HttpServlet {
 	String flagName = parseFlagName(request);
 	String userName = parseUserName(request);
 	String userNameInParam = request.getParameter("username");
-	if(userNameInParam != null) {
+	if (userNameInParam != null) {
 	    userName = userNameInParam;
 	}
 	Result result = null;
@@ -121,41 +137,42 @@ public class FlagServlet extends HttpServlet {
     }
 
     private String parseFlagName(HttpServletRequest request) {
-	String flagName = parseUserOrFlagName(request, true);
+	String flagName = parsePathInfo(request);
+
+	int slashIndex = flagName.indexOf("/");
+	if (slashIndex != -1) {
+	    flagName = flagName.substring(0, slashIndex);
+	}
 
 	// In the servlet API 2.4 we can't get this information in the init method without a Request object
 	servletUri = request.getContextPath() + request.getServletPath();
+	stringTemplate.setServletUri(servletUri);
 	return flagName;
     }
 
     private String parseUserName(HttpServletRequest request) {
-	String userName = parseUserOrFlagName(request, false);
+	String userName = parsePathInfo(request);
+
+	int slashIndex = userName.indexOf("/");
+	if (slashIndex != -1) {
+	    userName = userName.substring(slashIndex + 1);
+	    if (userName.length() == 0) {
+		userName = null;
+	    }
+	} else {
+	    userName = null;
+	}
 
 	return userName;
     }
 
-    private String parseUserOrFlagName(HttpServletRequest request, boolean parseFlag) {
+    private String parsePathInfo(HttpServletRequest request) {
 	String flagName = request.getPathInfo();
 	if (flagName != null && flagName.length() > 0) {
-	    flagName = flagName.substring(1);
-
-	    int slashIndex = flagName.indexOf("/");
-	    if (slashIndex != -1) {
-		if (parseFlag) {
-		    return flagName.substring(0, slashIndex);
-		} else {
-		    return flagName.substring(slashIndex + 1);
-		}
-	    } else {
-		if (parseFlag) {
-		    return flagName;
-		} else {
-		    return null;
-		}
-	    }
+	    return flagName.substring(1);
 	}
 
-	return null;
+	return "";
 
     }
 
@@ -181,10 +198,10 @@ public class FlagServlet extends HttpServlet {
 	    break;
 	default:
 	    if (body != null) {
-		String content = String.format(html, body);
+		String content = stringTemplate.getHtmlPage(body);
 		response.getWriter().print(content);
 	    } else {
-		if(refererPage != null) {
+		if (refererPage != null) {
 		    response.sendRedirect(refererPage);
 		} else {
 		    response.sendRedirect(servletUri);
@@ -192,60 +209,6 @@ public class FlagServlet extends HttpServlet {
 	    }
 	    break;
 	}
-    }
-
-    private String displayAllFlags() {
-	StringBuilder builder = new StringBuilder();
-
-	for (FeatureFlags flag : flagManager.getFlags()) {
-	    builder.append(getHtmlForFlag(flag, null));
-	}
-	return builder.toString();
-    }
-
-    private String getHtmlForFlag(FeatureFlags flag, String userName) {
-	String html = "<div class=\"flagDiv\">"; 
-	    html+= getHtmlForFlag(flag, userName, null);
-	String[] userNames = flagManager.getUsersForFlag(flag);
-	if (userNames.length > 0) {
-	    for (String user : userNames) {
-		html += getHtmlForUserFlag(flag, userName, user);
-	    }
-	}
-	html+= "<form class=\"flagForm\" method=\"POST\" action=\"/ff/flags/";
-	html+= flag;
-	html+="\" >";
-	html+= "<input type=\"text\" name=\"username\" title=\"add a user\" value=\"username\" />";
-	//html+= "<div title=\"First Feature Flag\" onclick=\"javascript:this.parentNode.submit();\" class=\"flagUp\">ONE</div>"; 
-	html+= "</form>";
-	return html;
-    }
-
-    private String getHtmlForFlag(FeatureFlags flag, String userName, String threadUserName) {
-	flagManager.setThreadUserName(threadUserName);
-	String divClass = flag.isUp() ? "flagUp" : "flagDown";
-	String uri = servletUri + "/" + flag;
-	if (userName != null) {
-	    uri += "/" + userName;
-	}
-	flagManager.resetThreadUserName();
-	return String.format(linkTemplate, uri, flag.getDescription(), divClass, flag);
-    }
-    
-    private String getHtmlForUserFlag(FeatureFlags flag, String userName, String threadUserName) {
-	flagManager.setThreadUserName(threadUserName);
-	String divClass = flag.isUp() ? "flagUp" : "flagDown";
-	String uri = servletUri + "/" + flag;
-
-	if (threadUserName != null) {
-	    uri += "/" + threadUserName;
-	} else if (userName != null) {
-	    uri += "/" + userName;
-	}
-	
-	
-	flagManager.resetThreadUserName();
-	return String.format(linkTemplate, uri, flag.getDescription(), divClass, threadUserName);
     }
 
 }
