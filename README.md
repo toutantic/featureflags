@@ -21,7 +21,7 @@ Roadmap
 - Persist flags state in case of reboot
 - Distribute flags state across servers 
 - Manage different state per server
-- Manage different state per user or user group
+- *Manage different state per user or user group* (available in 1.1.0)
 - ...
 
 How To Use
