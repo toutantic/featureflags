@@ -88,7 +88,7 @@ Create an enum like the one below to host all your feature flags.
 	
 **Fourth: Configure FeatureFlag servlet**  
 
-Add this to your web.xml
+Add this to your web.xml (replace filter-class and param-value with your own)
 
 		<servlet>
 			<servlet-name>featureFlags</servlet-name>
@@ -104,4 +104,48 @@ Add this to your web.xml
 			<servlet-name>featureFlags</servlet-name>
 			<url-pattern>/flags/*</url-pattern>
 		</servlet-mapping>
+		
+Optional: add a servlet filter to enable flag per user/group
+
+Create a servletFilter:
+
+	public class FeatureFlagFilter implements Filter {
+	
+	    private FlagManager flagManager;
+	    
+	    public void init(FilterConfig filterConfig) throws ServletException {
+			String featureFlagsClassName = filterConfig.getInitParameter("featureFlagsClassName");
+			flagManager = FlagManager.get(featureFlagsClassName);
+	    }
+	
+	    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+			// Replace this your code to get the current user or user group name
+			String username = request.getParameter("username");
+			flagManager.setThreadUserName(username);
+			chain.doFilter(request, response);
+			flagManager.resetThreadUserName();
+	
+	    }
+	
+	    public void destroy() {
+	    }
+	
+	}
+	
+Add this to your web.xml (replace filter-class and param-value with your own)
+
+	<filter>
+		<filter-name>featureFlagsFilter</filter-name>
+		<filter-class>org.featureflags.demo.FeatureFlagFilter</filter-class>
+		<init-param>
+			<param-name>featureFlagsClassName</param-name>
+			<param-value>org.featureflags.demo.Flags</param-value>
+			<description>Full class name of your Feature flags class. REQUIRED</description>
+		</init-param>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>featureFlagsFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 		

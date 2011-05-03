@@ -5,6 +5,20 @@
 <web-app>
 	<display-name>Sample configuration to use feature flag</display-name>
 
+	<filter>
+		<filter-name>featureFlagsFilter</filter-name>
+		<filter-class>org.featureflags.demo.FeatureFlagFilter</filter-class>
+		<init-param>
+			<param-name>featureFlagsClassName</param-name>
+			<param-value>org.featureflags.demo.Flags</param-value>
+			<description>Full class name of your Feature flags class. REQUIRED</description>
+		</init-param>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>featureFlagsFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 
 	<servlet>
 		<servlet-name>featureFlags</servlet-name>

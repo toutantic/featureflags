@@ -1,0 +1,3 @@
+<form class="flagForm" method="POST" action="%s" > 
+	<input type="text" name="username" title="add a user" value="username" /> 
+</form>
