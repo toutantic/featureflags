@@ -16,8 +16,7 @@ import org.featureflags.FlagManager.Result;
 public class FlagServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private FlagManager flagManager;
-    private String html;
-    private String linkTemplate;
+    private StringTemplate stringTemplate;
     private String servletUri;
 
     private enum AcceptedParameter {
@@ -44,9 +43,7 @@ public class FlagServlet extends HttpServlet {
 	String featureFlagsClassName = getServletConfig().getInitParameter("featureFlagsClassName");
 	flagManager = FlagManager.get(featureFlagsClassName);
 	flagManager.initFlags();
-	html = Utils.readRessource(flagManager, "index.html");
-	linkTemplate = Utils.readRessource(flagManager, "link.template");
-
+	stringTemplate = new StringTemplate(flagManager);
     }
 
     /**
@@ -54,64 +51,134 @@ public class FlagServlet extends HttpServlet {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
 	AcceptedFormat format = parseFormat(request);
 	Result result = Result.OK;
 	String responseString = "";
+	flagManager.setThreadUserName(userName);
 	if (flagName != null && flagName.length() > 0) {
 	    FeatureFlags flag = flagManager.getFlag(flagName);
 	    if (flag == null) {
 		result = Result.NOT_FOUND;
 	    } else {
-		switch (format) {
-		case txt:
-		    responseString = flag.isUp() ? FlagState.UP.toString() : FlagState.DOWN.toString();
-		    break;
-		default:
-		    responseString += getHtmlForFlag(flag);
-		    break;
+		if (userDoesNotExist(flag, userName)) {
+		    result = Result.NOT_FOUND;
+		} else {
+		    switch (format) {
+		    case txt:
+			responseString = flag.isUp() ? FlagState.UP.toString() : FlagState.DOWN.toString();
+			break;
+		    default:
+			responseString += stringTemplate.getHtmlForFlag(flag, userName);
+			break;
+		    }
 		}
 	    }
 	} else {
-	    responseString += displayAllFlags();
+	    responseString += stringTemplate.displayAllFlags();
 	}
-	sendResponse(response, flagName, result, responseString);
+	flagManager.resetThreadUserName();
+
+	sendResponse(response, flagName, result, responseString, null);
+    }
+
+    private boolean userDoesNotExist(FeatureFlags flag,String userName) {
+	if(userName == null) {
+	    return false;
+	}
+	String[] userNames = flagManager.getUsersForFlag(flag);
+	if (userNames.length > 0) {
+	    for (String user : userNames) {
+		if (user.equals(userName)) {
+		    return false;
+		}
+	    }
+	}
+	return true;
     }
 
     /**
      * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	String refererPage = request.getHeader("referer");
+	System.out.println(refererPage);
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
+	String userNameInParam = request.getParameter("username");
+	if (userNameInParam != null) {
+	    userName = userNameInParam;
+	}
+	Result result = null;
+	if (userName != null) {
+	    result = flagManager.flipFlagForUser(userName, flagName);
+	} else {
+	    result = flagManager.flipFlag(flagName);
+	}
 
-	Result result = flagManager.flipFlag(flagName);
-
-	sendResponse(response, flagName, result, null);
+	sendResponse(response, flagName, result, null, refererPage);
     }
 
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	String flagName = parseFlagName(request);
+	String userName = parseUserName(request);
+
 	FlagState newFlagState = parseFlagState(request);
 
-	Result result = flagManager.setFlagStateTo(flagName, newFlagState);
+	Result result = null;
+	if (userName != null) {
+	    result = flagManager.setFlagStateForUserTo(userName, flagName, newFlagState);
+	} else {
+	    result = flagManager.setFlagStateTo(flagName, newFlagState);
+	}
 
-	sendResponse(response, flagName, result, null);
+	sendResponse(response, flagName, result, null, null);
     }
 
     private String parseFlagName(HttpServletRequest request) {
-	String flagName = request.getPathInfo();
-	if (flagName != null && flagName.length() > 0) {
-	    flagName = flagName.substring(1);
+	String flagName = parsePathInfo(request);
+
+	int slashIndex = flagName.indexOf("/");
+	if (slashIndex != -1) {
+	    flagName = flagName.substring(0, slashIndex);
 	}
 
 	// In the servlet API 2.4 we can't get this information in the init method without a Request object
 	servletUri = request.getContextPath() + request.getServletPath();
+	stringTemplate.setServletUri(servletUri);
 	return flagName;
     }
-    
+
+    private String parseUserName(HttpServletRequest request) {
+	String userName = parsePathInfo(request);
+
+	int slashIndex = userName.indexOf("/");
+	if (slashIndex != -1) {
+	    userName = userName.substring(slashIndex + 1);
+	    if (userName.length() == 0) {
+		userName = null;
+	    }
+	} else {
+	    userName = null;
+	}
+
+	return userName;
+    }
+
+    private String parsePathInfo(HttpServletRequest request) {
+	String flagName = request.getPathInfo();
+	if (flagName != null && flagName.length() > 0) {
+	    return flagName.substring(1);
+	}
+
+	return "";
+
+    }
+
     private AcceptedFormat parseFormat(HttpServletRequest request) {
 	String formatString = request.getParameter(AcceptedParameter.format.toString());
-	//HTML is the default format
+	// HTML is the default format
 	if (formatString == null || formatString.length() == 0) {
 	    return AcceptedFormat.html;
 	}
@@ -123,36 +190,25 @@ public class FlagServlet extends HttpServlet {
 	FlagState newFlagState = FlagState.valueOf(flagNewStateString);
 	return newFlagState;
     }
-    
-    private void sendResponse(HttpServletResponse response, String flagName, Result result, String body) throws IOException {
+
+    private void sendResponse(HttpServletResponse response, String flagName, Result result, String body, String refererPage) throws IOException {
 	switch (result) {
 	case NOT_FOUND:
 	    response.sendError(404, "Can't find " + flagName);
 	    break;
 	default:
 	    if (body != null) {
-		String content = String.format(html, body);
+		String content = stringTemplate.getHtmlPage(body);
 		response.getWriter().print(content);
 	    } else {
-		response.sendRedirect(servletUri);
+		if (refererPage != null) {
+		    response.sendRedirect(refererPage);
+		} else {
+		    response.sendRedirect(servletUri);
+		}
 	    }
 	    break;
 	}
-    }
-
-    private String displayAllFlags() {
-	StringBuilder builder = new StringBuilder();
-
-	for (FeatureFlags flag : flagManager.getFlags()) {
-	    builder.append(getHtmlForFlag(flag));
-	}
-	return builder.toString();
-    }
-    
-    
-    private String getHtmlForFlag(FeatureFlags flag) {
-	String divClass = flag.isUp() ? "flagUp" : "flagDown";
-	return String.format(linkTemplate, servletUri + "/" + flag, flag.getDescription(), divClass, flag);
     }
 
 }
