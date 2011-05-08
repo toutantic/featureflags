@@ -1,7 +1,7 @@
 Feature flags
 =======
 
-*Turn feature up or down live by using feature flag also known as feature flipping*  
+*Turn feature up or down live by using feature flag also known as feature flipping or[feature toggle](http://martinfowler.com/bliki/FeatureToggle.html)*  
 Inspired by [Flickr](http://code.flickr.com/blog/2009/12/02/flipping-out/) and [Launchpad](https://dev.launchpad.net/LEP/FeatureFlags).  
 The main goal is to decouple code delivery in production from feature activation.  
 
