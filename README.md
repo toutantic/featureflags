@@ -1,9 +1,13 @@
+
 Feature flags
 =======
 
-*Turn feature up or down live by using feature flag also known as feature flipping or[feature toggle](http://martinfowler.com/bliki/FeatureToggle.html)*  
+*Turn feature up or down live by using feature flag also known as [feature flipping](http://www.grails.org/plugin/feature-flipper) or [feature toggle](http://martinfowler.com/bliki/FeatureToggle.html)
+  
 Inspired by [Flickr](http://code.flickr.com/blog/2009/12/02/flipping-out/) and [Launchpad](https://dev.launchpad.net/LEP/FeatureFlags).  
 The main goal is to decouple code delivery in production from feature activation.  
+
+See the [demo](http://featureflagsdemo.toutantic.cloudbees.net)  
 
 Requirements
 =======
@@ -12,16 +16,18 @@ Requirements
 * slf4j 1.6.1 (for logging)
 * Servlet API 2.4
 
-Demo
+Features
 =======
-[http://featureflagsdemo.toutantic.cloudbees.net](http://featureflagsdemo.toutantic.cloudbees.net)  
+- Flag created and used as enum
+- RESTful API
+- HTML Dashboard
+- Manage different state per user or user group (since 1.1.0)
 
 Roadmap
 =======
 - Persist flags state in case of reboot
 - Distribute flags state across servers 
 - Manage different state per server
-- *Manage different state per user or user group* (available in 1.1.0)
 - ...
 
 How To Use
@@ -29,9 +35,10 @@ How To Use
 
 **First: dependencies**  
 Add feature flag jar and dependencies to your classpath
-* [featureflags-1.1.0.jar](http://dl.dropbox.com/u/24652695/featureflags-1.1.0.jar)
-* [slf4-api-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar)
-* [slf4-simple-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar)
+
+-  [featureflags-1.1.0.jar](http://dl.dropbox.com/u/24652695/featureflags-1.1.0.jar)
+-  [slf4-api-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar)
+-  [slf4-simple-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar)
 
 **Second: create a FeatureFlags enum**  
 Create an enum like the one below to host all your feature flags.
@@ -147,10 +154,4 @@ Add this to your web.xml (replace filter-class and param-value with your own)
 		<filter-name>featureFlagsFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
-
-Feature flipping elsewhere
-=======
-* [grails](http://www.grails.org/plugin/feature-flipper)
-* [in django](http://djangopackages.com/grids/g/feature-flip/)
-
 		
