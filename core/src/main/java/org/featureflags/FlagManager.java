@@ -21,6 +21,7 @@ public class FlagManager {
     private String featureFlagClassName;
     private Map<FeatureFlags, FlagState> flagsStates;
     private Map<String, Map<FeatureFlags, FlagState>> flagUsers;
+    private FlagWriter flagWriter;
 
     private static ThreadLocal<String> currentUser;
 
@@ -37,13 +38,15 @@ public class FlagManager {
 	flagsStates = new HashMap<FeatureFlags, FlagManager.FlagState>();
 	flagUsers = new HashMap<String, Map<FeatureFlags, FlagState>>();
 	currentUser = new ThreadLocal<String>();
+	flagWriter = new FlagWriter(featureFlagClassName,this, flagsStates, flagUsers);
     }
 
     public static FlagManager get(FeatureFlags flag, FlagState flagState) {
 	if (instance == null) {
 	    instance = new FlagManager(flag.getClass().getCanonicalName());
 	}
-	instance.setFlagStateTo(flag, flagState);
+	// We do not persist state when we initializa the flags
+	instance.setFlagStateTo(flag, flagState, false);
 	return instance;
     }
 
@@ -61,6 +64,7 @@ public class FlagManager {
     public void initFlags() {
 	loadFeatureFlagsClass(featureFlagClassName);
 	flags = (FeatureFlags[]) invokeStaticMethod("values", null);
+	flagWriter.read();
     }
 
     public FeatureFlags[] getFlags() {
@@ -82,27 +86,35 @@ public class FlagManager {
 
     public Result flipFlag(FeatureFlags flag) {
 	FlagState newFlagState = flag.isUp() ? FlagState.DOWN : FlagState.UP;
-	return setFlagStateTo(flag, newFlagState);
+	return setFlagStateTo(flag, newFlagState, true);
     }
 
     public Result setFlagStateTo(String flagName, FlagState newFlagState) {
 	FeatureFlags flag = getFlag(flagName);
-	return setFlagStateTo(flag, newFlagState);
+	return setFlagStateTo(flag, newFlagState, true);
     }
 
-    public Result setFlagStateTo(FeatureFlags flag, FlagState newFlagState) {
-	return setFlagStateTo(this.flagsStates, "every user", flag, newFlagState);
+    public Result setFlagStateTo(FeatureFlags flag, FlagState newFlagState, boolean persist) {
+	return setFlagStateTo(this.flagsStates, "every user", flag, newFlagState, persist);
     }
     
     private Result setFlagStateTo(Map<FeatureFlags, FlagState> flagsStatesToChange,String userName, FeatureFlags flag, FlagState newFlagState) {
+	return setFlagStateTo(flagsStatesToChange, userName, flag, newFlagState, true);
+    }
+    
+    private Result setFlagStateTo(Map<FeatureFlags, FlagState> flagsStatesToChange,String userName, FeatureFlags flag, FlagState newFlagState, boolean persist) {
 	if (flag == null) {
 	    return Result.NOT_FOUND;
 	}
 	flagsStatesToChange.put(flag, newFlagState);
+	if(persist) {
+	    flagWriter.persist();
+	}
 	log.info("Flag {} {} for {}", new Object[] { flag, newFlagState, userName });
 
 	return newFlagState == FlagState.UP ? Result.FLIP_UP : Result.FLIP_DOWN;
     }
+    
 
     public boolean isUp(FeatureFlags flag) {
 	String userName = getThreadUserName();

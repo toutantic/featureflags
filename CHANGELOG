@@ -1,6 +1,10 @@
 Feature Flags changelog
 
 -----------------------
+Version 1.2.0 29/05/2011
+* Flags states are persisted to file in case of reboot
+
+-----------------------
 Version 1.1.0 04/05/2011
 * Set flag up or down per user
 * New demo
