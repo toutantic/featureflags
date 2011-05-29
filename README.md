@@ -22,10 +22,10 @@ Features
 - RESTful API
 - HTML Dashboard
 - Manage different state per user or user group (since 1.1.0)
+- Persist flags state in case of reboot (since 1.2.0)
 
 Roadmap
 =======
-- Persist flags state in case of reboot
 - Distribute flags state across servers 
 - Manage different state per server
 - ...
