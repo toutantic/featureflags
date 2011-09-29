@@ -1,6 +1,10 @@
 Feature Flags changelog
 
 -----------------------
+Version 1.2.1 29/09/2011
+* The content type of the response send by the admin servlet is now set to "text/html; charset=UTF-8"
+
+-----------------------
 Version 1.2.0 29/05/2011
 * Flags states are persisted to file in case of reboot
 

@@ -192,6 +192,7 @@ public class FlagServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, String flagName, Result result, String body, String refererPage) throws IOException {
+	response.setContentType("text/html; charset=UTF-8");
 	switch (result) {
 	case NOT_FOUND:
 	    response.sendError(404, "Can't find " + flagName);
