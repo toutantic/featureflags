@@ -35,7 +35,7 @@ How To Use
 **First: dependencies**  
 Add feature flag jar and dependencies to your classpath
 
--  [featureflags-1.2.0.jar](http://dl.dropbox.com/u/24652695/featureflags-1.2.0.jar)
+-  [featureflags-1.2.1.jar](https://github.com/downloads/toutantic/featureflags/featureflags-1.2.1.jar)
 -  [slf4-api-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar)
 -  [slf4-simple-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar)
 
