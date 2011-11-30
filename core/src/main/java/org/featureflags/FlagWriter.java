@@ -8,8 +8,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.featureflags.FlagManager.FlagState;
 import org.slf4j.Logger;
@@ -19,31 +17,24 @@ public class FlagWriter {
     
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private String userDir;
-    private String featureFlagsClass;
     private FlagManager manager;
-    private Map<FeatureFlags, FlagState> flagsStates;
-    private Map<String, Map<FeatureFlags, FlagState>> flagUsers;
     private File file;
     
-    public FlagWriter(String flagName, FlagManager manager, Map<FeatureFlags, FlagState> flagsStates, Map<String, Map<FeatureFlags, FlagState>> flagUsers) {
+    public FlagWriter(FlagManager manager) {
 	this.manager = manager;
-	this.featureFlagsClass = flagName;
-	this.flagsStates = flagsStates;
-	this.flagUsers = flagUsers;
-	userDir = System.getProperty("user.dir");
-	file = new File(userDir,flagName);
+	String userDir = System.getProperty("user.dir");
+	file = new File(userDir,manager.getFeatureFlagClassName());
     }
     
     public void persist() {
-	log.debug(flagsStates.toString());
-	log.debug(flagUsers.toString());
+	log.debug(manager.getFlagsStatesAsString());
+	log.debug(manager.getFlagsUsersAsString());
 	Writer writer = null;
 	try {
 	    writer = new BufferedWriter(new FileWriter(file));
-	    writer.write(flagsStates.toString());
+	    writer.write(manager.getFlagsStatesAsString());
 	    writer.write("\n");
-	    writer.write(flagUsers.toString());
+	    writer.write(manager.getFlagsUsersAsString());
 	    
 	} catch (FileNotFoundException e) {
 	    log.error("Writing flagfile", e);
@@ -78,7 +69,7 @@ public class FlagWriter {
 	    log.error("Reading flagfile", ioe);
 	}
 	
-	readFlagsStates(flagsStatesString, flagsStates);
+	readFlagsStates(flagsStatesString, null);
 	readFlagsUsersStates(flagUsersString);
 	
     }
@@ -97,11 +88,7 @@ public class FlagWriter {
 	    String[] userArray = flagString.split("=",2);
 	    String userName = userArray[0];
 	    String flagsStatesString = userArray[1].trim();
-	    Map<FeatureFlags, FlagState> userflagsStates = new HashMap<FeatureFlags, FlagManager.FlagState>();
-	    readFlagsStates(flagsStatesString, userflagsStates);
-	    if(userflagsStates.size() != 0) {
-		flagUsers.put(userName, userflagsStates);
-	    }
+	    readFlagsStates(flagsStatesString, userName);
 	}
 	
     }
@@ -110,7 +97,7 @@ public class FlagWriter {
 	return string.lastIndexOf(character) != string.length() -1;
     }
 
-    private void readFlagsStates(String flagsStatesString, Map<FeatureFlags, FlagState> mapToUpdate) {
+    private void readFlagsStates(String flagsStatesString, String userName) {
 	//removing { }
 	flagsStatesString = flagsStatesString.substring(1, flagsStatesString.length()-1);
 	String[] flagsStatesArray = flagsStatesString.split(",");
@@ -120,7 +107,11 @@ public class FlagWriter {
 	    FeatureFlags key = manager.getFlag(flagStringArray[0]);
 	    if(key != null) {
 		FlagState value = FlagState.valueOf(flagStringArray[1]);
-		mapToUpdate.put(key, value);
+		if(userName != null) {
+		    manager.setFlagStateForUserTo(userName, flagStringArray[0], value);
+		} else {
+		    manager.setFlagStateTo(flagStringArray[0], value);
+		}
 	    }
 	}
     }

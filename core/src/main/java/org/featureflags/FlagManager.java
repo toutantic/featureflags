@@ -16,9 +16,12 @@ public class FlagManager {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
     private static FlagManager instance;
+    // To be able to reset FlagManager for test
+    private static boolean initialized = false;
+    
     private FeatureFlags[] flags;
     private Class<?> featureFlagsClass;
-    private String featureFlagClassName;
+    
     private Map<FeatureFlags, FlagState> flagsStates;
     private Map<String, Map<FeatureFlags, FlagState>> flagUsers;
     private FlagWriter flagWriter;
@@ -34,12 +37,13 @@ public class FlagManager {
     }
 
     private FlagManager(String className) {
-	this.featureFlagClassName = className;
+	loadFeatureFlagsClass(className);
+	flagWriter = new FlagWriter(this);
 	flagsStates = new HashMap<FeatureFlags, FlagManager.FlagState>();
 	flagUsers = new HashMap<String, Map<FeatureFlags, FlagState>>();
 	currentUser = new ThreadLocal<String>();
-	flagWriter = new FlagWriter(featureFlagClassName,this, flagsStates, flagUsers);
     }
+
 
     public static FlagManager get(FeatureFlags flag, FlagState flagState) {
 	if (instance == null) {
@@ -62,9 +66,9 @@ public class FlagManager {
     }
 
     public void initFlags() {
-	loadFeatureFlagsClass(featureFlagClassName);
 	flags = (FeatureFlags[]) invokeStaticMethod("values", null);
 	flagWriter.read();
+	initialized = true;
     }
 
     public FeatureFlags[] getFlags() {
@@ -117,6 +121,7 @@ public class FlagManager {
     
 
     public boolean isUp(FeatureFlags flag) {
+	checkInitialize();
 	String userName = getThreadUserName();
 	Map<FeatureFlags, FlagState> userFlagsState = flagUsers.get(userName);
 	FlagState currentFlagState = null;
@@ -126,6 +131,13 @@ public class FlagManager {
 	    currentFlagState = flagsStates.get(flag);
 	}
 	return currentFlagState == FlagState.UP ? true : false;
+    }
+
+    private synchronized void checkInitialize() {
+	if(!initialized) {
+	    initFlags();
+	}
+	
     }
 
     public FeatureFlags getFlag(String flagName) {
@@ -197,6 +209,27 @@ public class FlagManager {
 	    }
 	}
 	return userNames.toArray(new String[userNames.size()]);
+    }
+
+    public String getFeatureFlagClassName() {
+        return featureFlagsClass.getCanonicalName();
+    }
+    
+    public String getFlagsStatesAsString() {
+	return flagsStates.toString();
+    }
+    
+    public String getFlagsUsersAsString() {
+	return flagUsers.toString();
+    }
+   
+    public static void reset() {
+	initialized = false;
+	currentUser.remove();
+    }
+    
+    public void resetUsersFlags() {
+	flagUsers = new HashMap<String, Map<FeatureFlags, FlagState>>();
     }
 
 }
