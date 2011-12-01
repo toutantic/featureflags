@@ -35,7 +35,7 @@ How To Use
 **First: dependencies**  
 Add feature flag jar and dependencies to your classpath
 
--  [featureflags-1.2.1.jar](https://github.com/downloads/toutantic/featureflags/featureflags-1.2.1.jar)
+-  [featureflags-1.2.2.jar](https://github.com/downloads/toutantic/featureflags/featureflags-1.2.2.jar)
 -  [slf4-api-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar)
 -  [slf4-simple-1.6.1.jar](http://search.maven.org/remotecontent?filepath=org/slf4j/slf4j-simple/1.6.1/slf4j-simple-1.6.1.jar)
 
@@ -55,22 +55,21 @@ Create an enum like the one below to host all your feature flags.
 	    THREE("Third Feature Flag");
 	    
 	    //Don't change anything below
-	    private FlagState flagState = FlagState.DOWN;
 	    private String description;
-	    private FlagManager flagManager;
+	    private static FlagManager flagManager;
 	    
 	    private Flags(String description) {
-			initFlag(description, flagState);
+		this(description, FlagState.DOWN);
 	    }
 	
 	    private Flags(String description, FlagState flagState) {
-			this.flagState = flagState;
-			initFlag(description, flagState);
+		initFlag(description, flagState);
 	    }
 	
 	    public void initFlag(String description, FlagState flagState) {
-			this.description = description;
-			this.flagManager = FlagManager.get(this, flagState);    
+		this.description = description;
+		flagManager = FlagManager.get(this.getClass());
+		flagManager.setFlagStateTo(this, flagState);
 	    }
 	    
 	    public boolean isUp() {
