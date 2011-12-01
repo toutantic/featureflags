@@ -27,8 +27,8 @@ public class FlagWriter {
     }
     
     public void persist() {
-	log.debug(manager.getFlagsStatesAsString());
-	log.debug(manager.getFlagsUsersAsString());
+	log.info(manager.getFlagsStatesAsString());
+	log.info(manager.getFlagsUsersAsString());
 	Writer writer = null;
 	try {
 	    writer = new BufferedWriter(new FileWriter(file));
@@ -68,7 +68,7 @@ public class FlagWriter {
 	} catch (IOException ioe) {
 	    log.error("Reading flagfile", ioe);
 	}
-	
+
 	readFlagsStates(flagsStatesString, null);
 	readFlagsUsersStates(flagUsersString);
 	

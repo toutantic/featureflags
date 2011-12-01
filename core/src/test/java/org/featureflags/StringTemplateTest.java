@@ -2,28 +2,18 @@ package org.featureflags;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Test;
 
-public class StringTemplateTest {
+public class StringTemplateTest extends FeatureFlagTest {
 
     private StringTemplate template;
-    private FlagManager manager;
 
     @Before
     public void setUp() {
-	FlagManager.reset();
-	manager = FlagManager.get("org.featureflags.Flags");
-	manager.resetUsersFlags();
-
+	super.setUp();
 	template = new StringTemplate(manager);
 	template.setServletUri("/ff/flags");
-	
-	String userDir = System.getProperty("user.dir");
-	File file = new File(userDir,"org.featureflags.Flags");
-	file.delete();
 	
     }
     

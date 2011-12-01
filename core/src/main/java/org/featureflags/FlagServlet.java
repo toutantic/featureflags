@@ -130,7 +130,7 @@ public class FlagServlet extends HttpServlet {
 	if (userName != null) {
 	    result = flagManager.setFlagStateForUserTo(userName, flagName, newFlagState);
 	} else {
-	    result = flagManager.setFlagStateTo(flagName, newFlagState);
+	    result = flagManager.setFlagStateToAndPersist(flagName, newFlagState);
 	}
 
 	sendResponse(response, flagName, result, null, null);

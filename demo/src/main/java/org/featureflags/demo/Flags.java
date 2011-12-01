@@ -11,22 +11,21 @@ public enum Flags implements FeatureFlags {
     THREE("Third Feature Flag");
     
     //Don't change anything below
-    private FlagState flagState = FlagState.DOWN;
     private String description;
-    private FlagManager flagManager;
+    private static FlagManager flagManager;
     
     private Flags(String description) {
-	initFlag(description, flagState);
+	this(description, FlagState.DOWN);
     }
 
     private Flags(String description, FlagState flagState) {
-	this.flagState = flagState;
 	initFlag(description, flagState);
     }
 
     public void initFlag(String description, FlagState flagState) {
 	this.description = description;
-	this.flagManager = FlagManager.get(this, flagState);    
+	flagManager = FlagManager.get(this.getClass());
+	flagManager.setFlagStateTo(this, flagState);
     }
     
     public boolean isUp() {

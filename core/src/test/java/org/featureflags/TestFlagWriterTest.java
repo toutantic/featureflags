@@ -13,7 +13,7 @@ import java.io.Writer;
 import org.featureflags.FlagManager.FlagState;
 import org.junit.Test;
 
-public class TestFlagWriterTest {
+public class TestFlagWriterTest extends FeatureFlagTest {
 
     @Test
     public void test00Init() {
@@ -21,15 +21,12 @@ public class TestFlagWriterTest {
 	assertTrue("Flag ONE is up", Flags.ONE.isUp());
     }
     
-    @Test
     public void testPersist() {
-	FlagManager manager = FlagManager.get("org.featureflags.Flags");
-	//manager.initFlags();
 	String userName= "bob";
 	String userName2= "foo";
 	
-	manager.setFlagStateTo(Flags.ONE, FlagState.DOWN, true);
-	manager.setFlagStateTo(Flags.TWO, FlagState.UP, true);
+	manager.setFlagStateToAndPersist(Flags.ONE, FlagState.DOWN);
+	manager.setFlagStateToAndPersist(Flags.TWO, FlagState.UP);
 	manager.setFlagStateForUserTo(userName, Flags.ONE.name(), FlagState.UP);
 	manager.setFlagStateForUserTo(userName2, Flags.THREE.name(), FlagState.DOWN);
 	manager.setFlagStateForUserTo(userName2, Flags.TWO.name(), FlagState.DOWN);
@@ -73,5 +70,5 @@ public class TestFlagWriterTest {
 	    }
 	}
     }
-
+    
 }
