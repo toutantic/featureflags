@@ -50,7 +50,7 @@ public class FlagManagerTest extends FeatureFlagTest {
 	FlagThread[] flagThreads = new FlagThread[8];
 	for (int i = 0; i < testUsers.length; i++) {
 	    flagThreads[i] = new FlagThread(testUsers[i]);
-	    manager.setFlagStateForUserTo(testUsers[i], Flags.ONE.toString(), FlagState.valueOf(flagState[i]));
+	    manager.setFlagStateForUserToAndPersist(testUsers[i], Flags.ONE.toString(), FlagState.valueOf(flagState[i]));
 	}
 
 	for (int i = 0; i < testUsers.length; i++) {
@@ -75,7 +75,7 @@ public class FlagManagerTest extends FeatureFlagTest {
 	assertEquals(false, Flags.ONE.isUp());
 
 	assertEquals(true, Flags.TWO.isUp());
-	manager.setFlagStateForUserTo("other", Flags.TWO.toString(), FlagState.DOWN);
+	manager.setFlagStateForUserToAndPersist("other", Flags.TWO.toString(), FlagState.DOWN);
 	assertEquals(true, Flags.TWO.isUp());
 	manager.setThreadUserName("other");
 	assertEquals(false, Flags.ONE.isUp());

@@ -108,7 +108,7 @@ public class FlagWriter {
 	    if(key != null) {
 		FlagState value = FlagState.valueOf(flagStringArray[1]);
 		if(userName != null) {
-		    manager.setFlagStateForUserTo(userName, flagStringArray[0], value);
+		    manager.setFlagStateForUser(userName, flagStringArray[0], value);
 		} else {
 		    manager.setFlagStateTo(flagStringArray[0], value);
 		}

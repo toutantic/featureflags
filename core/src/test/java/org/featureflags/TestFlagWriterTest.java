@@ -27,9 +27,9 @@ public class TestFlagWriterTest extends FeatureFlagTest {
 	
 	manager.setFlagStateToAndPersist(Flags.ONE, FlagState.DOWN);
 	manager.setFlagStateToAndPersist(Flags.TWO, FlagState.UP);
-	manager.setFlagStateForUserTo(userName, Flags.ONE.name(), FlagState.UP);
-	manager.setFlagStateForUserTo(userName2, Flags.THREE.name(), FlagState.DOWN);
-	manager.setFlagStateForUserTo(userName2, Flags.TWO.name(), FlagState.DOWN);
+	manager.setFlagStateForUserToAndPersist(userName, Flags.ONE.name(), FlagState.UP);
+	manager.setFlagStateForUserToAndPersist(userName2, Flags.THREE.name(), FlagState.DOWN);
+	manager.setFlagStateForUserToAndPersist(userName2, Flags.TWO.name(), FlagState.DOWN);
 	FlagWriter writer = new FlagWriter(manager);
 	writer.persist();
 	

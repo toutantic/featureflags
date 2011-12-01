@@ -192,14 +192,20 @@ public class FlagManager {
 	FeatureFlags flag = getFlag(flagName);
 	FlagState newFlagState = flag.isUp() ? FlagState.DOWN : FlagState.UP;
 	resetThreadUserName();
-	return setFlagStateTo(userFlagsState, userName, flag, newFlagState);
+	return setFlagStateToAndPersist(userFlagsState, userName, flag, newFlagState);
     }
 
-    public Result setFlagStateForUserTo(String userName, String flagName, FlagState newFlagState) {
+    public Result setFlagStateForUserToAndPersist(String userName, String flagName, FlagState newFlagState) {
 	FeatureFlags flag = getFlag(flagName);
 	Map<FeatureFlags, FlagState> userFlagsState = getOrCreateUser(userName);
-	return setFlagStateTo(userFlagsState, userName, flag, newFlagState);
+	return setFlagStateToAndPersist(userFlagsState, userName, flag, newFlagState);
     }
+    
+    public Result setFlagStateForUser(String userName, String flagName, FlagState newFlagState) {
+ 	FeatureFlags flag = getFlag(flagName);
+ 	Map<FeatureFlags, FlagState> userFlagsState = getOrCreateUser(userName);
+ 	return setFlagStateTo(userFlagsState, userName, flag, newFlagState);
+     }
 
     public void resetThreadUserName() {
 	currentUser.remove();
